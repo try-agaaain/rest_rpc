@@ -25,11 +25,14 @@ class connection : public std::enable_shared_from_this<connection>,
 public:
   connection(asio::io_service &io_service, std::size_t timeout_seconds,
              router &router)
-      : socket_(io_service), body_(INIT_BUF_SIZE), timer_(io_service),
+      : socket_(io_service), body_(INIT_BUF_SIZE), timer_(io_service),  // mark：这里创建的socket_是 接收socket 还是 已连接socket ？
         timeout_seconds_(timeout_seconds), has_closed_(false), router_(router) {
   }
 
-  ~connection() { close(); }
+  ~connection() { 
+      close(); 
+      std::cout << "connection 已关闭" << std::endl;
+  }
 
   void start() {
     if (is_ssl() && !has_shake_) {
@@ -141,8 +144,10 @@ public:
 
 private:
   void read_head() {
+    std::cout << "read_head: " << std::endl;
     reset_timer();
     auto self(this->shared_from_this());
+    // 在事件到来后，通过handler解析rpc报文，并对客户端请求进行回应
     async_read_head([this, self](asio::error_code ec, std::size_t length) {
       if (!socket_.is_open()) {
         if (on_net_err_) {
@@ -206,7 +211,8 @@ private:
       }
 
       if (!ec) {
-        read_head();
+        read_head();    // 处理下一个请求，在下一个请求到来前进行异步等待
+        // request_type 支持两种信息：根据README推测req_res应该是普通的请求方式，sub_pub应该是发布订阅方式
         if (req_type_ == request_type::req_res) {
           route_result_t ret = router_.route<connection>(
               func_id, nonstd::string_view{body_.data(), length},
@@ -214,6 +220,7 @@ private:
           if (delay_) {
             delay_ = false;
           } else {
+            // 在这里完成对客户端的回应
             response_interal(
                 req_id_, std::make_shared<std::string>(std::move(ret.result)));
           }

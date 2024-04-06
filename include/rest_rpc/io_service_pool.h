@@ -20,7 +20,7 @@ public:
       work_.push_back(work);
     }
   }
-
+  // mark：在执行完这个函数后，所有的io_service都将开始运行
   void run() {
     std::vector<std::shared_ptr<std::thread>> threads;
     for (std::size_t i = 0; i < io_services_.size(); ++i) {
@@ -31,7 +31,7 @@ public:
     for (std::size_t i = 0; i < threads.size(); ++i)
       threads[i]->join();
   }
-
+  // mark：让所有io_service停止运行
   void stop() {
     for (std::size_t i = 0; i < io_services_.size(); ++i) {
       io_services_[i]->stop();

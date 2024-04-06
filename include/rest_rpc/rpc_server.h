@@ -17,8 +17,8 @@ class rpc_server : private asio::noncopyable {
 public:
   rpc_server(unsigned short port, size_t size, size_t timeout_seconds = 15,
              size_t check_seconds = 10)
-      : io_service_pool_(size), acceptor_(io_service_pool_.get_io_service(),
-                                          tcp::endpoint(tcp::v4(), port)),
+      : io_service_pool_(size), acceptor_(io_service_pool_.get_io_service(),    // 从这里可知，io_service_pool_是用于管理监听socket的
+                                          tcp::endpoint(tcp::v4(), port)),  // 根据这里选择的随机ip和确定的port也可以确定上面的信息
         timeout_seconds_(timeout_seconds), check_seconds_(check_seconds),
         signals_(io_service_pool_.get_io_service()) {
     do_accept();
@@ -96,6 +96,9 @@ private:
   void do_accept() {
     conn_.reset(new connection(io_service_pool_.get_io_service(),
                                timeout_seconds_, router_));
+    // conn_中的callback_将会在读写事件后调用，
+    // 当请求为普通的远程调用时，并不会调用callback_
+    // 当请求为订阅发布时，会调用callback_
     conn_->set_callback([this](std::string key, std::string token,
                                std::weak_ptr<connection> conn) {
       std::unique_lock<std::mutex> lock(sub_mtx_);
@@ -104,7 +107,7 @@ private:
         token_list_.emplace(std::move(token));
       }
     });
-
+    // mark：根据下面的用法可知conn_->socket()对应客户端的socket，那么connection类是专门用于处理客户socket的
     acceptor_.async_accept(conn_->socket(), [this](asio::error_code ec) {
       if (!acceptor_.is_open()) {
         return;
@@ -122,10 +125,10 @@ private:
         if (on_net_err_callback_) {
           conn_->on_network_error(on_net_err_callback_);
         }
-        conn_->start();
+        conn_->start(); // mark：连接上用户socket后，在start里处理对应的读写事件
         std::unique_lock<std::mutex> lock(mtx_);
         conn_->set_conn_id(conn_id_);
-        connections_.emplace(conn_id_++, conn_);
+        connections_.emplace(conn_id_++, conn_);    // conn_会被加入到connections_中，因此在进行接受新的连接时不会被析构
       }
 
       do_accept();
@@ -133,6 +136,7 @@ private:
   }
 
   void clean() {
+    // 持续不断的进行清理操作，清理已完成的连接
     while (!stop_check_) {
       std::unique_lock<std::mutex> lock(mtx_);
       cv_.wait_for(lock, std::chrono::seconds(check_seconds_));
@@ -149,7 +153,7 @@ private:
       }
     }
   }
-
+  // 清理已完成的订阅发布
   void clean_sub_pub() {
     while (!stop_check_pub_sub_) {
       std::unique_lock<std::mutex> lock(sub_mtx_);
@@ -246,7 +250,7 @@ private:
       sub_cv_.notify_all();
     }
     pub_sub_thread_->join();
-
+    // mark：停止所有的io_service，不再接受新的客户端连接
     io_service_pool_.stop();
     if (thd_) {
       thd_->join();

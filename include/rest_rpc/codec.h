@@ -12,7 +12,8 @@ struct msgpack_codec {
 
   template <typename... Args> static buffer_type pack_args(Args &&...args) {
     buffer_type buffer(init_size);
-    msgpack::pack(buffer, std::forward_as_tuple(std::forward<Args>(args)...));
+    auto temp = std::forward_as_tuple(std::forward<Args>(args)...);
+    msgpack::pack(buffer, temp);
     return buffer;
   }
 
