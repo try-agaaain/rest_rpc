@@ -20,7 +20,7 @@ public:
       work_.push_back(work);
     }
   }
-  // mark£ºÔÚÖ´ĞĞÍêÕâ¸öº¯Êıºó£¬ËùÓĞµÄio_service¶¼½«¿ªÊ¼ÔËĞĞ
+  // markï¼šåœ¨æ‰§è¡Œå®Œè¿™ä¸ªå‡½æ•°åï¼Œæ‰€æœ‰çš„io_serviceéƒ½å°†å¼€å§‹è¿è¡Œ
   void run() {
     std::vector<std::shared_ptr<std::thread>> threads;
     for (std::size_t i = 0; i < io_services_.size(); ++i) {
@@ -31,7 +31,7 @@ public:
     for (std::size_t i = 0; i < threads.size(); ++i)
       threads[i]->join();
   }
-  // mark£ºÈÃËùÓĞio_serviceÍ£Ö¹ÔËĞĞ
+  // markï¼šè®©æ‰€æœ‰io_serviceåœæ­¢è¿è¡Œ
   void stop() {
     for (std::size_t i = 0; i < io_services_.size(); ++i) {
       io_services_[i]->stop();

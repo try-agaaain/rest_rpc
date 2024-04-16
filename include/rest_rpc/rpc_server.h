@@ -17,8 +17,8 @@ class rpc_server : private asio::noncopyable {
 public:
   rpc_server(unsigned short port, size_t size, size_t timeout_seconds = 15,
              size_t check_seconds = 10)
-      : io_service_pool_(size), acceptor_(io_service_pool_.get_io_service(),    // ´ÓÕâÀï¿ÉÖª£¬io_service_pool_ÊÇÓÃÓÚ¹ÜÀí¼àÌısocketµÄ
-                                          tcp::endpoint(tcp::v4(), port)),  // ¸ù¾İÕâÀïÑ¡ÔñµÄËæ»úipºÍÈ·¶¨µÄportÒ²¿ÉÒÔÈ·¶¨ÉÏÃæµÄĞÅÏ¢
+      : io_service_pool_(size), acceptor_(io_service_pool_.get_io_service(),    // ä»è¿™é‡Œå¯çŸ¥ï¼Œio_service_pool_æ˜¯ç”¨äºç®¡ç†ç›‘å¬socketçš„
+                                          tcp::endpoint(tcp::v4(), port)),  // æ ¹æ®è¿™é‡Œé€‰æ‹©çš„éšæœºipå’Œç¡®å®šçš„portä¹Ÿå¯ä»¥ç¡®å®šä¸Šé¢çš„ä¿¡æ¯
         timeout_seconds_(timeout_seconds), check_seconds_(check_seconds),
         signals_(io_service_pool_.get_io_service()) {
     do_accept();
@@ -96,9 +96,9 @@ private:
   void do_accept() {
     conn_.reset(new connection(io_service_pool_.get_io_service(),
                                timeout_seconds_, router_));
-    // conn_ÖĞµÄcallback_½«»áÔÚ¶ÁĞ´ÊÂ¼şºóµ÷ÓÃ£¬
-    // µ±ÇëÇóÎªÆÕÍ¨µÄÔ¶³Ìµ÷ÓÃÊ±£¬²¢²»»áµ÷ÓÃcallback_
-    // µ±ÇëÇóÎª¶©ÔÄ·¢²¼Ê±£¬»áµ÷ÓÃcallback_
+    // conn_ä¸­çš„callback_å°†ä¼šåœ¨è¯»å†™äº‹ä»¶åè°ƒç”¨ï¼Œ
+    // å½“è¯·æ±‚ä¸ºæ™®é€šçš„è¿œç¨‹è°ƒç”¨æ—¶ï¼Œå¹¶ä¸ä¼šè°ƒç”¨callback_
+    // å½“è¯·æ±‚ä¸ºè®¢é˜…å‘å¸ƒæ—¶ï¼Œä¼šè°ƒç”¨callback_
     conn_->set_callback([this](std::string key, std::string token,
                                std::weak_ptr<connection> conn) {
       std::unique_lock<std::mutex> lock(sub_mtx_);
@@ -107,7 +107,7 @@ private:
         token_list_.emplace(std::move(token));
       }
     });
-    // mark£º¸ù¾İÏÂÃæµÄÓÃ·¨¿ÉÖªconn_->socket()¶ÔÓ¦¿Í»§¶ËµÄsocket£¬ÄÇÃ´connectionÀàÊÇ×¨ÃÅÓÃÓÚ´¦Àí¿Í»§socketµÄ
+    // markï¼šæ ¹æ®ä¸‹é¢çš„ç”¨æ³•å¯çŸ¥conn_->socket()å¯¹åº”å®¢æˆ·ç«¯çš„socketï¼Œé‚£ä¹ˆconnectionç±»æ˜¯ä¸“é—¨ç”¨äºå¤„ç†å®¢æˆ·socketçš„
     acceptor_.async_accept(conn_->socket(), [this](asio::error_code ec) {
       if (!acceptor_.is_open()) {
         return;
@@ -125,10 +125,10 @@ private:
         if (on_net_err_callback_) {
           conn_->on_network_error(on_net_err_callback_);
         }
-        conn_->start(); // mark£ºÁ¬½ÓÉÏÓÃ»§socketºó£¬ÔÚstartÀï´¦Àí¶ÔÓ¦µÄ¶ÁĞ´ÊÂ¼ş
+        conn_->start(); // markï¼šè¿æ¥ä¸Šç”¨æˆ·socketåï¼Œåœ¨starté‡Œå¤„ç†å¯¹åº”çš„è¯»å†™äº‹ä»¶
         std::unique_lock<std::mutex> lock(mtx_);
         conn_->set_conn_id(conn_id_);
-        connections_.emplace(conn_id_++, conn_);    // conn_»á±»¼ÓÈëµ½connections_ÖĞ£¬Òò´ËÔÚ½øĞĞ½ÓÊÜĞÂµÄÁ¬½ÓÊ±²»»á±»Îö¹¹
+        connections_.emplace(conn_id_++, conn_);    // conn_ä¼šè¢«åŠ å…¥åˆ°connections_ä¸­ï¼Œå› æ­¤åœ¨è¿›è¡Œæ¥å—æ–°çš„è¿æ¥æ—¶ä¸ä¼šè¢«ææ„
       }
 
       do_accept();
@@ -136,7 +136,7 @@ private:
   }
 
   void clean() {
-    // ³ÖĞø²»¶ÏµÄ½øĞĞÇåÀí²Ù×÷£¬ÇåÀíÒÑÍê³ÉµÄÁ¬½Ó
+    // æŒç»­ä¸æ–­çš„è¿›è¡Œæ¸…ç†æ“ä½œï¼Œæ¸…ç†å·²å®Œæˆçš„è¿æ¥
     while (!stop_check_) {
       std::unique_lock<std::mutex> lock(mtx_);
       cv_.wait_for(lock, std::chrono::seconds(check_seconds_));
@@ -153,7 +153,7 @@ private:
       }
     }
   }
-  // ÇåÀíÒÑÍê³ÉµÄ¶©ÔÄ·¢²¼
+  // æ¸…ç†å·²å®Œæˆçš„è®¢é˜…å‘å¸ƒ
   void clean_sub_pub() {
     while (!stop_check_pub_sub_) {
       std::unique_lock<std::mutex> lock(sub_mtx_);
@@ -250,7 +250,7 @@ private:
       sub_cv_.notify_all();
     }
     pub_sub_thread_->join();
-    // mark£ºÍ£Ö¹ËùÓĞµÄio_service£¬²»ÔÙ½ÓÊÜĞÂµÄ¿Í»§¶ËÁ¬½Ó
+    // markï¼šåœæ­¢æ‰€æœ‰çš„io_serviceï¼Œä¸å†æ¥å—æ–°çš„å®¢æˆ·ç«¯è¿æ¥
     io_service_pool_.stop();
     if (thd_) {
       thd_->join();

@@ -89,7 +89,7 @@ public:
             result_code::FAIL, "unknown function: " + get_name_by_key(key));
         route_result.ec = router_error::no_such_function;
       } else {
-        it->second(conn, data, result);
+        it->second(conn, data, result); // 实际的函数执行
         route_result.ec = router_error::ok;
       }
     } catch (const std::exception &ex) {
@@ -180,6 +180,7 @@ private:
 
   template <bool is_pub, typename Function>
   void register_nonmember_func(uint32_t key, Function f) {
+    std::cout << "come in register_nonmember_func" << std::endl;
     this->map_invokers_[key] = [f](std::weak_ptr<connection> conn,
                                    nonstd::string_view str,
                                    std::string &result) {
@@ -199,6 +200,7 @@ private:
 
   template <bool is_pub, typename Function, typename Self>
   void register_member_func(uint32_t key, const Function &f, Self *self) {
+    std::cout << "come in register_member_func" << std::endl;
     this->map_invokers_[key] = [f, self](std::weak_ptr<connection> conn,
                                          nonstd::string_view str,
                                          std::string &result) {

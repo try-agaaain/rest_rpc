@@ -53,3 +53,5 @@ build/
 x64
 
 .cache
+
+basic_code/bin

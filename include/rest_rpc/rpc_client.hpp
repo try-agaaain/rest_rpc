@@ -11,6 +11,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <memory>
 
 namespace rest_rpc {
 

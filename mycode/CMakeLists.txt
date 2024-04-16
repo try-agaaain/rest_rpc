@@ -11,6 +11,10 @@ add_executable(client2 client/client2.cpp)
 add_executable(client1 client/client1.cpp)
 add_executable(server1 server/server1.cpp)
 
+add_executable(sub_client client/sub_client.cpp)
+add_executable(pub_server server/pub_server.cpp)
+
+
 
 target_link_libraries(server ${Boost_LIBRARIES})
 target_link_libraries(client ${Boost_LIBRARIES})

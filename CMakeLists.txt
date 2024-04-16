@@ -20,3 +20,4 @@ if (BUILD_EXAMPLES)
 endif ()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mycode)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/basic_code)

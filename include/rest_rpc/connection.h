@@ -25,13 +25,13 @@ class connection : public std::enable_shared_from_this<connection>,
 public:
   connection(asio::io_service &io_service, std::size_t timeout_seconds,
              router &router)
-      : socket_(io_service), body_(INIT_BUF_SIZE), timer_(io_service),  // mark£ºÕâÀï´´½¨µÄsocket_ÊÇ ½ÓÊÕsocket »¹ÊÇ ÒÑÁ¬½Ósocket £¿
+      : socket_(io_service), body_(INIT_BUF_SIZE), timer_(io_service),  // markï¼šè¿™é‡Œåˆ›å»ºçš„socket_æ˜¯ æ¥æ”¶socket è¿˜æ˜¯ å·²è¿æ¥socket ï¼Ÿ
         timeout_seconds_(timeout_seconds), has_closed_(false), router_(router) {
   }
 
   ~connection() { 
       close(); 
-      std::cout << "connection ÒÑ¹Ø±Õ" << std::endl;
+      std::cout << "connection å·²å…³é—­" << std::endl;
   }
 
   void start() {
@@ -144,10 +144,10 @@ public:
 
 private:
   void read_head() {
-    std::cout << "read_head: " << std::endl;
+    std::cout << "1. read_head > å¼€å§‹ reset_timer" << std::endl;
     reset_timer();
     auto self(this->shared_from_this());
-    // ÔÚÊÂ¼şµ½À´ºó£¬Í¨¹ıhandler½âÎörpc±¨ÎÄ£¬²¢¶Ô¿Í»§¶ËÇëÇó½øĞĞ»ØÓ¦
+    // åœ¨äº‹ä»¶åˆ°æ¥åï¼Œé€šè¿‡handlerè§£ærpcæŠ¥æ–‡ï¼Œå¹¶å¯¹å®¢æˆ·ç«¯è¯·æ±‚è¿›è¡Œå›åº”
     async_read_head([this, self](asio::error_code ec, std::size_t length) {
       if (!socket_.is_open()) {
         if (on_net_err_) {
@@ -173,18 +173,22 @@ private:
           if (body_.size() < body_len) {
             body_.resize(body_len);
           }
+          std::cout << "2. async_read_head > å¼€å§‹ read_body" << std::endl;
           read_body(header->func_id, body_len);
           return;
         }
 
         if (body_len == 0) { // nobody, just head, maybe as heartbeat.
+          std::cout << "body_len == 0 > å¼€å§‹ cancel_timer" << std::endl;
           cancel_timer();
+          std::cout << "body_len == 0 > å¼€å§‹ read_head" << std::endl;
           read_head();
         } else {
           print("invalid body len");
           if (on_net_err_) {
             (*on_net_err_)(self, "invalid body len");
           }
+          std::cout << "body_len != 0 > å¼€å§‹ close" << std::endl;
           close();
         }
       } else {
@@ -192,6 +196,7 @@ private:
         if (on_net_err_) {
           (*on_net_err_)(self, ec.message());
         }
+        std::cout << "-1. ec != 0 > å¼€å§‹ close" << std::endl;
         close();
       }
     });
@@ -199,8 +204,10 @@ private:
 
   void read_body(uint32_t func_id, std::size_t size) {
     auto self(this->shared_from_this());
+    std::cout << "3. read_body > å¼€å§‹ async_read" << std::endl;
     async_read(size, [this, func_id, self](asio::error_code ec,
                                            std::size_t length) {
+      std::cout << "4. async_read > å¼€å§‹ cancel_timer" << std::endl;
       cancel_timer();
 
       if (!socket_.is_open()) {
@@ -211,8 +218,9 @@ private:
       }
 
       if (!ec) {
-        read_head();    // ´¦ÀíÏÂÒ»¸öÇëÇó£¬ÔÚÏÂÒ»¸öÇëÇóµ½À´Ç°½øĞĞÒì²½µÈ´ı
-        // request_type Ö§³ÖÁ½ÖÖĞÅÏ¢£º¸ù¾İREADMEÍÆ²âreq_resÓ¦¸ÃÊÇÆÕÍ¨µÄÇëÇó·½Ê½£¬sub_pubÓ¦¸ÃÊÇ·¢²¼¶©ÔÄ·½Ê½
+        std::cout << "5. ec == 0 > å¼€å§‹ read_head" << std::endl;
+        read_head();    // å¤„ç†ä¸‹ä¸€ä¸ªè¯·æ±‚ï¼Œåœ¨ä¸‹ä¸€ä¸ªè¯·æ±‚åˆ°æ¥å‰è¿›è¡Œå¼‚æ­¥ç­‰å¾…
+        // request_type æ”¯æŒä¸¤ç§ä¿¡æ¯ï¼šæ ¹æ®READMEæ¨æµ‹req_resåº”è¯¥æ˜¯æ™®é€šçš„è¯·æ±‚æ–¹å¼ï¼Œsub_pubåº”è¯¥æ˜¯å‘å¸ƒè®¢é˜…æ–¹å¼
         if (req_type_ == request_type::req_res) {
           route_result_t ret = router_.route<connection>(
               func_id, nonstd::string_view{body_.data(), length},
@@ -220,7 +228,7 @@ private:
           if (delay_) {
             delay_ = false;
           } else {
-            // ÔÚÕâÀïÍê³É¶Ô¿Í»§¶ËµÄ»ØÓ¦
+            // åœ¨è¿™é‡Œå®Œæˆå¯¹å®¢æˆ·ç«¯çš„å›åº”
             response_interal(
                 req_id_, std::make_shared<std::string>(std::move(ret.result)));
           }

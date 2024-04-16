@@ -11,4 +11,8 @@ add_executable(${project_name}
         main.cpp
         )
 
+# add_executable(test_codec
+#         test_codec.cpp
+# main.cpp
+# )
 add_test(NAME ${project_name} COMMAND test_rest_rpc)
